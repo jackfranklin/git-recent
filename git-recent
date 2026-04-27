@@ -125,13 +125,10 @@ _browse_branches() {
         --bind 'preview-scroll-up:preview-up+preview-up+preview-up' \
         --bind 'preview-scroll-down:preview-down+preview-down+preview-down' \
         --bind "ctrl-y:execute-silent($copy_cmd)" \
-        --bind "ctrl-o:transform:[[ \$FZF_PREVIEW_LABEL == 'Branch diff' ]] && cat '$_preview_commits_action' || cat '$_preview_diff_action'"
+        --bind "ctrl-o:transform:[[ \$FZF_PREVIEW_LABEL == 'Branch diff' ]] && printf 'change-preview(%s)+change-preview-label(Commits unique to branch)' \"\$GIT_RECENT_COMMITS_CMD\" || printf 'change-preview(%s)+change-preview-label(Branch diff)' \"\$GIT_RECENT_DIFF_CMD\""
 }
-_preview_diff_action=$(mktemp)
-_preview_commits_action=$(mktemp)
-trap 'rm -f "$_preview_diff_action" "$_preview_commits_action"' EXIT
-echo "change-preview($diffbranch_cmd)+change-preview-label(Branch diff)" > "$_preview_diff_action"
-echo "change-preview($uniqcommits_cmd)+change-preview-label(Commits unique to branch)" > "$_preview_commits_action"
+export GIT_RECENT_DIFF_CMD="$diffbranch_cmd"
+export GIT_RECENT_COMMITS_CMD="$uniqcommits_cmd"
 
 output="$(_browse_branches)"
 line_count=$(printf "%s" "$output" | wc -l)
