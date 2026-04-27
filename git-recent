@@ -4,7 +4,7 @@
 # git recent 2.0 - switching branches, but so fancy
 #
 # - view recently edited local branches
-# - see unique commits to that branch, and optionally the branch diff (against the main/master/primary branch) with Ctrl-o
+# - see unique commits to that branch, and toggle the branch diff (against the main/master/primary branch) with Ctrl-o
 # - hit Enter to checkout the selected branch.
 # - text filtering against branch names, too.
 #
@@ -20,7 +20,7 @@ if [[ "$1" == "--help" ]]; then
   echo
   echo "Keybindings:"
   echo "  Enter:      Checkout the selected branch (or jump to its worktree if open elsewhere)"
-  echo "  Ctrl-O:     Show the diff of the selected branch against the main/master branch"
+  echo "  Ctrl-O:     Toggle the diff of the selected branch against the main/master branch"
   echo "  Ctrl-C:     Exit"
   exit 0
 fi
@@ -121,12 +121,18 @@ _browse_branches() {
         --border-label-pos=2 --border-label '🌲 Branches' --border \
         --no-hscroll --no-multi \
         --preview-window='right,70%,border-left,border-rounded' --preview="$uniqcommits_cmd" --preview-label="Commits unique to branch" \
-        --header $'ENTER (checkout)\nCTRL-O (show branch diff)\nCTRL-Y (copy name to clipboard)' \
+        --header $'ENTER (checkout)\nCTRL-O (toggle branch diff)\nCTRL-Y (copy name to clipboard)' \
         --bind 'preview-scroll-up:preview-up+preview-up+preview-up' \
         --bind 'preview-scroll-down:preview-down+preview-down+preview-down' \
         --bind "ctrl-y:execute-silent($copy_cmd)" \
-        --bind "ctrl-o:preview:$diffbranch_cmd"
+        --bind "ctrl-o:transform:[[ \$FZF_PREVIEW_LABEL == 'Branch diff' ]] && cat '$_preview_commits_action' || cat '$_preview_diff_action'"
 }
+_preview_diff_action=$(mktemp)
+_preview_commits_action=$(mktemp)
+trap 'rm -f "$_preview_diff_action" "$_preview_commits_action"' EXIT
+echo "change-preview($diffbranch_cmd)+change-preview-label(Branch diff)" > "$_preview_diff_action"
+echo "change-preview($uniqcommits_cmd)+change-preview-label(Commits unique to branch)" > "$_preview_commits_action"
+
 output="$(_browse_branches)"
 line_count=$(printf "%s" "$output" | wc -l)
 
